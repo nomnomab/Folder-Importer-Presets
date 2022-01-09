@@ -1,0 +1,16 @@
+{
+  "name": "com.nomnom.folder-importer-presets.Editor",
+  "rootNamespace": "Nomnom.FolderImporterPresets",
+  "references": [],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

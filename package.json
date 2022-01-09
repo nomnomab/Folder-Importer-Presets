@@ -1,0 +1,24 @@
+{
+  "name": "com.nomnom.folder-importer-presets",
+  "version": "1.0.0",
+  "displayName": "Folder Importer Presets",
+  "description": "Provides the ability to apply custom import presets to a folder structure.\n",
+  "unity": "2020.3",
+  "unityRelease": "20f1",
+  "licensesUrl": "https://choosealicense.com/licenses/mit/",
+  "dependencies": {},
+  "devDependencies": {},
+  "samples": [],
+  "keywords": [
+    "nomnom",
+    "folder",
+    "presets",
+    "importer"
+  ],
+  "author": {
+    "name": "Andrew Burke",
+    "email": "",
+    "url": ""
+  },
+  "type": "library"
+}
