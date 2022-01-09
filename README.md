@@ -1,13 +1,11 @@
 # Folder Importer Presets
 
----
 This package allows for you to have folder-specific asset importers.
 
 ![Preview png](Assets~/preview.png)
 
 ## Installation
 
----
 #### OpenUPM
 ```
 openupm add com.nomnom.folder-importer-presets
@@ -16,11 +14,9 @@ openupm add com.nomnom.folder-importer-presets
 #### Package Manager
 1. Open the Package Manager (`Window/Package Manager`)
 2. Add a package from git URL
-3. Input `https://github.com/nomnomab/Folder-Importer-Presets.git`
+3. Input `https://github.com/nomnomab/Folder-Importer-Presets.git`~~~~
 
 ## Usage
-
----
 
 Presets made through the normal means of preset creation can be added to a `Folder Importer` asset.
 - This is located under `Create/Nomnom/Folder Importer`
@@ -32,8 +28,6 @@ The `Force Apply Filters` is used to force apply all importers under the given d
 > Keep in mind, forcing the filter is a destructive operation and can not be reverted.
 
 ## Filter Syntax
-
----
 
 | Prefix | Keybind | Example |
   |---|---|---|
