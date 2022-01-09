@@ -31,7 +31,9 @@ Once a preset is added, it can be be enabled/disabled, given a filter, and can b
 The `Force Apply Filters` is used to force apply all importers under the given directory, as well as any sub-directories.
 > Keep in mind, forcing the filter is a destructive operation and can not be reverted.
 
-### Filter Syntax
+## Filter Syntax
+
+---
 
 | Prefix | Keybind | Example |
   |---|---|---|
