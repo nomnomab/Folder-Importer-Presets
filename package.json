@@ -1,6 +1,6 @@
 {
   "name": "com.nomnom.folder-importer-presets",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "displayName": "Folder Importer Presets",
   "description": "Provides the ability to apply custom import presets to a folder structure.\n",
   "unity": "2020.3",
