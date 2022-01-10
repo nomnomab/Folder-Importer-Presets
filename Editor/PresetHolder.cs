@@ -19,7 +19,7 @@ namespace Nomnom.FolderImporterPresets.Editor {
 			Filter = string.Empty;
 		}
 
-		public bool IsFilterValid(Object obj, UnityEditor.AssetImporter assetImporter, string path) {
+		public bool IsFilterValid(Object obj, UnityEditor.AssetImporter assetImporter, string path, string rootPath) {
 			bool canBeAppliedTo = Preset.CanBeAppliedTo(assetImporter);
 
 			if (!canBeAppliedTo || !Enabled) {
@@ -30,6 +30,10 @@ namespace Nomnom.FolderImporterPresets.Editor {
 			if (string.IsNullOrEmpty(Filter)) {
 				return true;
 			}
+
+			rootPath = Path.GetDirectoryName(rootPath);
+			rootPath = $"{Application.dataPath.Substring(0, Application.dataPath.Length - 6)}{rootPath}\\";
+			rootPath = rootPath.Replace("/", "\\");
 			
 			FileInfo fileInfo = new FileInfo(path);
 			DirectoryInfo directoryInfo = fileInfo.Directory;
@@ -48,16 +52,37 @@ namespace Nomnom.FolderImporterPresets.Editor {
 
 				string inputFilter = getInitFilter(filter);
 				FileInfo[] files;
+				string[] directories;
 
 				switch (filter[0]) {
 					case 'n': // file name
 					case 'e': // extension
-						files = directoryInfo.GetFiles(inputFilter);
-						foreach (FileInfo file in files) {
-							if (file.FullName.Equals(fileInfo.FullName, StringComparison.InvariantCultureIgnoreCase)) {
-								return true;
+						try {
+							files = directoryInfo.GetFiles(inputFilter);
+							
+							foreach (FileInfo file in files) {
+								if (file.FullName.Equals(fileInfo.FullName, StringComparison.InvariantCultureIgnoreCase)) {
+									return true;
+								}
 							}
 						}
+						catch (Exception) {
+							// ignored
+						}
+
+						try {
+							directories = Directory.GetDirectories(rootPath, inputFilter, SearchOption.AllDirectories);
+
+							foreach (string directory in directories) {
+								if (fileInfo.FullName.StartsWith(directory, StringComparison.InvariantCultureIgnoreCase)) {
+									return true;
+								}
+							}
+						}
+						catch (Exception) {
+							// ignored
+						}
+
 						break;
 					case 't': // object type
 						if (obj.GetType().FullName.EndsWith(inputFilter, StringComparison.InvariantCultureIgnoreCase)) {

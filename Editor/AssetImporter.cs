@@ -34,7 +34,7 @@ namespace Nomnom.FolderImporterPresets.Editor {
 				}
 
 				_metaMissing.Remove(path);
-				
+
 				Object obj = AssetDatabase.LoadAssetAtPath<Object>(path);
 				UnityEditor.AssetImporter assetImporter = UnityEditor.AssetImporter.GetAtPath(path);
 				
@@ -53,11 +53,17 @@ namespace Nomnom.FolderImporterPresets.Editor {
 							.Select(AssetDatabase.GUIDToAssetPath)
 							.Where(path => Path.GetDirectoryName(path) == folder)
 							.Select(AssetDatabase.LoadAssetAtPath<FolderImporter>);
+
+					bool isDone = false;
 					
 					foreach (FolderImporter importer in importers) {
+						if (isDone) {
+							break;
+						}
+						
 						// get a valid preset
 						foreach (PresetHolder holder in importer.Presets) {
-							bool isValid = holder.IsFilterValid(obj, assetImporter, path);
+							bool isValid = holder.IsFilterValid(obj, assetImporter, path, AssetDatabase.GetAssetPath(importer));
 
 							if (!isValid) {
 								continue;
@@ -68,12 +74,14 @@ namespace Nomnom.FolderImporterPresets.Editor {
 
 							isDirty = true;
 
-							goto next;
+							isDone = true;
+							break;
 						}
 					}
-					
-					next:
+
+					if (isDone) {
 						break;
+					}
 				}
 			}
 
@@ -127,7 +135,7 @@ namespace Nomnom.FolderImporterPresets.Editor {
 				foreach (FolderImporter importer in importers) {
 					// get a valid preset
 					foreach (PresetHolder holder in importer.Presets) {
-						bool isValid = holder.IsFilterValid(obj, assetImporter, path);
+						bool isValid = holder.IsFilterValid(obj, assetImporter, path, AssetDatabase.GetAssetPath(importer));
 
 						if (!isValid) {
 							continue;
