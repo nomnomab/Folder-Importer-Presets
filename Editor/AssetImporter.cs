@@ -1,15 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
-using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace Nomnom.FolderImporterPresets.Editor {
 	internal class AssetImporter: AssetPostprocessor {
 		private static HashSet<string> _ignorePaths = new HashSet<string>();
 		private static HashSet<string> _metaMissing = new HashSet<string>();
+		private static FolderImporter _folderImporter;
 
 		private void OnPreprocessAsset() {
 			if (assetImporter.importSettingsMissing) {
@@ -20,6 +19,17 @@ namespace Nomnom.FolderImporterPresets.Editor {
 		private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets,
 			string[] movedFromAssetPaths) {
 			bool isDirty = false;
+			
+			FolderImporter[] importers = AssetDatabase.FindAssets($"t:{typeof(FolderImporter).FullName}")
+				.Select(AssetDatabase.GUIDToAssetPath)
+				.Select(AssetDatabase.LoadAssetAtPath<FolderImporter>)
+				.ToArray();
+
+			if (importers == null || importers.Length == 0) {
+				return;
+			}
+
+			FolderImporter importer = importers[0];
 
 			foreach (string path in importedAssets) {
 				if (_ignorePaths.Contains(path)) {
@@ -43,27 +53,27 @@ namespace Nomnom.FolderImporterPresets.Editor {
 				var backwardPath = CollectPathToRoot(path);
 				foreach (string folder in backwardPath) {
 					// get any folder importers
-					IEnumerable<FolderImporter> importers =
+					IEnumerable<DefaultAsset> folders =
 						string.IsNullOrEmpty(folder) 
-							? AssetDatabase.FindAssets($"t:{typeof(FolderImporter).FullName}")
+							? AssetDatabase.FindAssets($"t:{typeof(DefaultAsset).FullName}")
 								.Select(AssetDatabase.GUIDToAssetPath)
 								.Where(path => string.IsNullOrEmpty(Path.GetDirectoryName(path)))
-								.Select(AssetDatabase.LoadAssetAtPath<FolderImporter>) 
-							: AssetDatabase.FindAssets($"t:{typeof(FolderImporter).FullName}", new [] {folder})
+								.Select(AssetDatabase.LoadAssetAtPath<DefaultAsset>) 
+							: AssetDatabase.FindAssets($"t:{typeof(DefaultAsset).FullName}", new [] {folder})
 							.Select(AssetDatabase.GUIDToAssetPath)
 							.Where(path => Path.GetDirectoryName(path) == folder)
-							.Select(AssetDatabase.LoadAssetAtPath<FolderImporter>);
+							.Select(AssetDatabase.LoadAssetAtPath<DefaultAsset>);
 
 					bool isDone = false;
 					
-					foreach (FolderImporter importer in importers) {
+					foreach (DefaultAsset defaultFolder in folders) {
 						if (isDone) {
 							break;
 						}
-						
+
 						// get a valid preset
-						foreach (PresetHolder holder in importer.Presets) {
-							bool isValid = holder.IsFilterValid(obj, assetImporter, path, AssetDatabase.GetAssetPath(importer));
+						foreach (PresetHolder holder in importer.Presets[defaultFolder]) {
+							bool isValid = holder.IsFilterValid(obj, assetImporter, path, AssetDatabase.GetAssetPath(defaultFolder));
 
 							if (!isValid) {
 								continue;
@@ -115,27 +125,39 @@ namespace Nomnom.FolderImporterPresets.Editor {
 		public static bool PreCheckForAsset(Object obj) {
 			string path = AssetDatabase.GetAssetPath(obj);
 			UnityEditor.AssetImporter assetImporter = UnityEditor.AssetImporter.GetAtPath(path);
+			
+			FolderImporter[] importers = AssetDatabase.FindAssets($"t:{typeof(FolderImporter).FullName}")
+				.Select(AssetDatabase.GUIDToAssetPath)
+				.Select(AssetDatabase.LoadAssetAtPath<FolderImporter>)
+				.ToArray();
+
+			if (importers == null || importers.Length == 0) {
+				return false;
+			}
+
+			FolderImporter importer = importers[0];
 				
 			// only touch assets that are missing a .meta file
 			// get a backwards path to root
 			var backwardPath = CollectPathToRoot(path);
 			foreach (string folder in backwardPath) {
 				// get any folder importers
-				IEnumerable<FolderImporter> importers =
+				// get any folder importers
+				IEnumerable<DefaultAsset> folders =
 					string.IsNullOrEmpty(folder) 
-						? AssetDatabase.FindAssets($"t:{typeof(FolderImporter).FullName}")
+						? AssetDatabase.FindAssets($"t:{typeof(DefaultAsset).FullName}")
 							.Select(AssetDatabase.GUIDToAssetPath)
 							.Where(path => string.IsNullOrEmpty(Path.GetDirectoryName(path)))
-							.Select(AssetDatabase.LoadAssetAtPath<FolderImporter>) 
-						: AssetDatabase.FindAssets($"t:{typeof(FolderImporter).FullName}", new [] {folder})
+							.Select(AssetDatabase.LoadAssetAtPath<DefaultAsset>) 
+						: AssetDatabase.FindAssets($"t:{typeof(DefaultAsset).FullName}", new [] {folder})
 							.Select(AssetDatabase.GUIDToAssetPath)
 							.Where(path => Path.GetDirectoryName(path) == folder)
-							.Select(AssetDatabase.LoadAssetAtPath<FolderImporter>);
+							.Select(AssetDatabase.LoadAssetAtPath<DefaultAsset>);
 					
-				foreach (FolderImporter importer in importers) {
+				foreach (DefaultAsset defaultFolder in folders) {
 					// get a valid preset
-					foreach (PresetHolder holder in importer.Presets) {
-						bool isValid = holder.IsFilterValid(obj, assetImporter, path, AssetDatabase.GetAssetPath(importer));
+					foreach (PresetHolder holder in importer.Presets[defaultFolder]) {
+						bool isValid = holder.IsFilterValid(obj, assetImporter, path, AssetDatabase.GetAssetPath(defaultFolder));
 
 						if (!isValid) {
 							continue;

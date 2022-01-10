@@ -10,13 +10,31 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace Nomnom.FolderImporterPresets.Editor {
-	[CustomEditor(typeof(FolderImporter))]
+	[CustomEditor(typeof(DefaultAsset))]
 	internal class FolderImporterGUI: UnityEditor.Editor {
 		private List<Group> _groups = new List<Group>();
 		private Object _currentSelection;
 		private bool _showGuide;
+		private FolderImporter _masterImporter;
 
 		private void OnEnable() {
+			FolderImporter[] importers = AssetDatabase.FindAssets($"t:{typeof(FolderImporter).FullName}")
+				.Select(AssetDatabase.GUIDToAssetPath)
+				.Select(AssetDatabase.LoadAssetAtPath<FolderImporter>)
+				.ToArray();
+
+			if (importers == null || importers.Length == 0) {
+				// create a new asset
+				FolderImporter newImporter = CreateInstance<FolderImporter>();
+				AssetDatabase.CreateAsset(newImporter, "Assets/Folder Importer.asset");
+				_masterImporter = newImporter;
+				
+				AssetDatabase.SaveAssets();
+				AssetDatabase.Refresh();
+			} else {
+				_masterImporter = importers[0];
+			}
+			
 			UpdateGroups();
 		}
 
@@ -25,6 +43,7 @@ namespace Nomnom.FolderImporterPresets.Editor {
 		}
 
 		public override void OnInspectorGUI() {
+			GUI.enabled = true;
 			EditorGUILayout.BeginHorizontal();
 			EditorGUILayout.BeginVertical();
 			GUILayout.Space(13);
@@ -45,7 +64,7 @@ namespace Nomnom.FolderImporterPresets.Editor {
 			switch (e.type) {
 				case EventType.DragUpdated:
 				case EventType.DragPerform:
-					if (rect.Contains(e.mousePosition) && !GetTarget().Contains(DragAndDrop.objectReferences)) {
+					if (rect.Contains(e.mousePosition) && !_masterImporter.Contains(GetTarget(), DragAndDrop.objectReferences)) {
 						DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
 			
 						if (e.type == EventType.DragPerform) {
@@ -66,7 +85,7 @@ namespace Nomnom.FolderImporterPresets.Editor {
 			
 			EditorGUILayout.EndHorizontal();
 
-			GUI.enabled = GetTarget().Presets.Count > 0;
+			GUI.enabled = _masterImporter.Presets.Count > 0;
 			if (GUILayout.Button(new GUIContent("Force Apply Filters", "This will force a reimport of this folder and all subdirectories.\n\nUse at your own risk!"))) {
 				// collect all assets in folders
 				var assets = AssetDatabase.FindAssets(string.Empty, new []{ Path.GetDirectoryName(AssetDatabase.GetAssetPath(GetTarget())) })
@@ -124,16 +143,20 @@ namespace Nomnom.FolderImporterPresets.Editor {
 		}
 
 		private void AddPreset(Preset preset) {
-			FolderImporter obj = GetTarget();
+			DefaultAsset target = GetTarget();
 			
-			foreach (PresetHolder presetHolder in obj.Presets) {
+			// add preset to list
+			if (!_masterImporter.Presets.ContainsKey(GetTarget())) {
+				_masterImporter.Presets[target] = new List<PresetHolder>();
+			}
+			
+			foreach (PresetHolder presetHolder in _masterImporter.Presets[target]) {
 				if (presetHolder.Preset == preset) {
 					return;
 				}
 			}
-							
-			// add preset to list
-			obj.Presets.Add(new PresetHolder(preset));
+
+			_masterImporter.Presets[target].Add(new PresetHolder(preset));
 							
 			UpdateGroups();
 			MarkDirty();
@@ -214,8 +237,14 @@ namespace Nomnom.FolderImporterPresets.Editor {
 
 		private void UpdateGroups() {
 			_groups.Clear();
+
+			DefaultAsset target = GetTarget();
+
+			if (!_masterImporter.Presets.ContainsKey(target)) {
+				_masterImporter.Presets[target] = new List<PresetHolder>();
+			}
 			
-			IEnumerable<IGrouping<PresetType, PresetHolder>> groups = GetTarget().Presets
+			IEnumerable<IGrouping<PresetType, PresetHolder>> groups = _masterImporter.Presets[target]
 				.GroupBy(preset => preset.Preset.GetPresetType());
 
 			foreach (var grouping in groups) {
@@ -225,7 +254,7 @@ namespace Nomnom.FolderImporterPresets.Editor {
 
 		private void CollectPresets() {
 			IEnumerable<PresetHolder> presets = _groups.SelectMany(group => group.Presets);
-			GetTarget().Presets = presets.ToList();
+			_masterImporter.Presets[GetTarget()] = presets.ToList();
 			UpdateGroups();
 			
 			MarkDirty();
@@ -235,7 +264,7 @@ namespace Nomnom.FolderImporterPresets.Editor {
 			EditorUtility.SetDirty(GetTarget());
 		}
 		
-		private FolderImporter GetTarget() => (FolderImporter) target;
+		private DefaultAsset GetTarget() => (DefaultAsset) target;
 
 		private class Group {
 			public PresetType Importer;
